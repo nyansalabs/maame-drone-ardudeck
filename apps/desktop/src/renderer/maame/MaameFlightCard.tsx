@@ -9,7 +9,7 @@ import { useMissionStore } from '../stores/mission-store';
 import { useParameterStore } from '../stores/parameter-store';
 import { fenceWarningForPoint } from '../utils/fence-check';
 import { checkMission } from './mission-check';
-import { loadHoverCurrent } from './hover-test';
+import { NO_LIFTOFF, loadHoverCurrent, watchLiftOff, type LiftOffWatch } from './hover-test';
 import { MAAME_WIND_LEVEL_M, windAtLaunch } from './wind-check';
 import type { WindField } from '../../shared/wind-types';
 import { useConnectionStore } from '../stores/connection-store';
@@ -27,10 +27,38 @@ export const COPTER_MODE = { STABILIZE: 0, AUTO: 3, RTL: 6, LAND: 9, BRAKE: 17 }
  * leaving the drone to arm, sit and auto-disarm), then arm. STABILIZE is always
  * allowed while disarmed; AUTO_OPTIONS lets ArduPilot arm and take off by itself.
  */
-export async function startUploadedMission(): Promise<boolean> {
+export async function startUploadedMission(onNoLiftOff: (message: string) => void): Promise<boolean> {
   if (!(await window.electronAPI.mavlinkSetMode(COPTER_MODE.STABILIZE))) return false;
   if (!(await window.electronAPI.mavlinkSetMode(COPTER_MODE.AUTO))) return false;
-  return window.electronAPI.mavlinkArmDisarm(true, false);
+  const armed = await window.electronAPI.mavlinkArmDisarm(true, false);
+  if (armed) watchTakeoff(onNoLiftOff);
+  return armed;
+}
+
+let takeoffTimer: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Watch the takeoff just started until lift-off or disarm; force-disarm on no lift-off (watchLiftOff).
+ * Module-level, so it keeps watching when the Pre-flight panel is left.
+ */
+function watchTakeoff(onNoLiftOff: (message: string) => void): void {
+  if (takeoffTimer) clearInterval(takeoffTimer);
+  const startedAt = Date.now();
+  let w: LiftOffWatch & { abort?: boolean } = { since: null, lifted: false };
+  let sawArmed = false;
+  const stop = () => { if (takeoffTimer) clearInterval(takeoffTimer); takeoffTimer = null; };
+  takeoffTimer = setInterval(() => {
+    const s = useTelemetryStore.getState();
+    if (s.flight.armed) sawArmed = true;
+    else if (sawArmed || Date.now() - startedAt > 10_000) return stop(); // disarmed, or the arm never showed in telemetry
+    w = watchLiftOff(w, { armed: s.flight.armed, throttlePct: s.vfrHud.throttle, altM: s.position.relativeAlt, nowMs: Date.now() });
+    if (w.lifted) return stop();
+    if (w.abort) {
+      stop();
+      void window.electronAPI.mavlinkArmDisarm(false, true); // force disarm: it is still on the ground
+      onNoLiftOff(`No lift-off: ${s.vfrHud.throttle}% throttle for ${NO_LIFTOFF.ms / 1000} s and still on the ground. Motors stopped. Props on and tight? Skids caught?`);
+    }
+  }, 250);
 }
 
 /** FC parameter as the FC holds it (not an unsaved local edit), null when not loaded. */
@@ -131,7 +159,7 @@ export function MaameFlightCard() {
           'Props on, area clear, people back. Emergency controls appear in the header once armed.',
       );
       if (!go) return true;
-      return startUploadedMission();
+      return startUploadedMission(setError);
     });
 
   return (

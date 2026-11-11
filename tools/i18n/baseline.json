@@ -7,7 +7,7 @@
   "renderer/maame/MaameCoordinateMissionCard.tsx": 11,
   "renderer/maame/MaameEmergencyBar.tsx": 14,
   "renderer/maame/MaameFlightCard.tsx": 13,
-  "renderer/maame/MaameHoverTestCard.tsx": 17,
+  "renderer/maame/MaameHoverTestCard.tsx": 16,
   "renderer/maame/MaameLinkBadge.tsx": 1,
   "renderer/maame/MaameMotorVibeCard.tsx": 15,
   "renderer/maame/MaameSafetyCard.tsx": 13,

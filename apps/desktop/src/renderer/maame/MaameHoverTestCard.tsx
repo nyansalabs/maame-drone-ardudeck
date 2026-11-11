@@ -11,7 +11,7 @@ import { useTelemetryStore } from '../stores/telemetry-store';
 import { freshPiHealth, useMaameCompanion } from './companion-store';
 import { useMaameBaselineResults } from './MaameSafetyCard';
 import { startUploadedMission, useFcParam } from './MaameFlightCard';
-import { HOVER_HEIGHTS_M, HOVER_HOLD_S, NO_LIFTOFF, averageHoverCurrent, hoverTestMission, hoverTestProblem, saveHoverCurrent, watchLiftOff, type LiftOffWatch } from './hover-test';
+import { HOVER_HEIGHTS_M, HOVER_HOLD_S, averageHoverCurrent, hoverTestMission, hoverTestProblem, saveHoverCurrent } from './hover-test';
 import { MAV_STATE_ACTIVE, readyChecks } from './ready-checks';
 import { peakVibe, vibrationVerdict, type Vibe } from './vibration';
 import { useMaameLinkProblem, useMaameLinkUp } from './maame-profile';
@@ -69,23 +69,6 @@ export function MaameHoverTestCard() {
     const avg = averageHoverCurrent(ampSamples.current);
     if (avg !== null) { saveHoverCurrent(avg); setHoverAmps(avg); ampSamples.current = []; }
   }, [armed]);
-  // No lift-off abort, only on flights this card started (the launch flow is not watched).
-  const throttlePct = useTelemetryStore((s) => s.vfrHud.throttle);
-  const ourFlight = useRef(false);
-  const sawArmed = useRef(false);
-  const liftOff = useRef<LiftOffWatch>({ since: null, lifted: false });
-  useEffect(() => {
-    if (!ourFlight.current) return;
-    const w = watchLiftOff(liftOff.current, { armed, throttlePct, altM, nowMs: Date.now() });
-    liftOff.current = w;
-    if (armed) sawArmed.current = true;
-    else if (sawArmed.current) { ourFlight.current = false; sawArmed.current = false; } // flight over
-    if (w.abort) {
-      ourFlight.current = false;
-      void window.electronAPI.mavlinkArmDisarm(false, true); // force disarm: it is still on the ground
-      setError(`No lift-off: ${throttlePct}% throttle for ${NO_LIFTOFF.ms / 1000} s and still on the ground. Motors stopped. Props on and tight? Skids caught?`);
-    }
-  }, [armed, throttlePct, altM, nowMs]);
   const vibTone = { good: 'text-green-400', marginal: 'text-amber-400', bad: 'text-red-400' };
 
   // The test brings its own mission, so the planned-mission checks do not apply.
@@ -115,16 +98,13 @@ export function MaameHoverTestCard() {
     if (!go) return;
     setBusy(true);
     setError(null);
-    ourFlight.current = true;
-    liftOff.current = { since: null, lifted: false };
     try {
       const up = await window.electronAPI.uploadMission(hoverTestMission(plan));
       if (!up?.success) throw new Error(up?.error || 'upload failed');
       // The FC now holds the hover test, not the planned mission: make the launch card upload again.
       useMissionStore.setState({ lastUploadedAt: null });
-      if (!(await startUploadedMission())) throw new Error('could not switch to AUTO and arm (see Messages)');
+      if (!(await startUploadedMission(setError))) throw new Error('could not switch to AUTO and arm (see Messages)');
     } catch (e) {
-      ourFlight.current = false;
       setError(`Hover test failed: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       setBusy(false);
