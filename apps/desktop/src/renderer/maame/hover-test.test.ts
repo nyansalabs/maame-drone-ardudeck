@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MAV_CMD } from '../../shared/mission-types';
-import { averageHoverCurrent, hoverTestMission, hoverTestProblem } from './hover-test';
+import { averageHoverCurrent, hoverTestMission, hoverTestProblem, watchLiftOff, type LiftOffWatch } from './hover-test';
 
 const plan = { heightM: 1, holdS: 8, lat: 51.65, lon: -0.08 };
 
@@ -21,6 +21,17 @@ describe('Maame hover test mission', () => {
     expect(hoverTestProblem({ ...plan, holdS: 11 })).toMatch(/hover time/);
     expect(hoverTestProblem({ ...plan, lat: 0, lon: 0 })).toMatch(/GPS/);
     expect(() => hoverTestMission({ ...plan, heightM: 3 })).toThrow();
+  });
+  it('aborts after 3 s of 90 %+ throttle without lift-off, never once airborne', () => {
+    const step = (w: LiftOffWatch, nowMs: number, throttlePct: number, altM = 0, armed = true) =>
+      watchLiftOff(w, { armed, throttlePct, altM, nowMs });
+    let w = step({ since: null, lifted: false }, 0, 97);
+    expect(step(w, 2900, 100).abort).toBe(false);
+    expect(step(w, 3000, 100, -0.3).abort).toBe(true); // baro drift below the pad still counts as on the ground
+    expect(step(step(w, 1000, 50), 3000, 100).abort).toBe(false); // throttle dip restarts the clock
+    w = step(w, 1000, 95, 0.4); // lifted off
+    expect(step(w, 9000, 100, 0.1).abort).toBe(false);
+    expect(step(w, 9000, 100, 0, false)).toEqual({ since: null, lifted: false, abort: false }); // disarm resets
   });
   it('averages hover current only from enough in-air samples', () => {
     expect(averageHoverCurrent([20, 22, 24, 0, NaN, 21, 23, 22, 20, 24, 22, 23])).toBeCloseTo(22.1, 1);

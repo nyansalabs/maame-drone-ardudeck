@@ -31,6 +31,23 @@ export function averageHoverCurrent(samples: number[]): number | null {
 }
 export const HOVER_HOLD_S = { min: 5, max: 10 } as const;
 
+/** No lift-off: this much throttle (%) for this long, still below this height (baro drift stays under ~0.1 m on the pad). */
+export const NO_LIFTOFF = { throttlePct: 90, altM: 0.2, ms: 3000 } as const;
+
+export interface LiftOffWatch { since: number | null; lifted: boolean }
+
+/**
+ * One telemetry step of the no-lift-off watch. ArduCopter's auto takeoff never gives up, so with props
+ * off or a skid caught it holds full throttle on the ground indefinitely; abort = force-disarm now.
+ */
+export function watchLiftOff(w: LiftOffWatch, s: { armed: boolean; throttlePct: number; altM: number; nowMs: number }): LiftOffWatch & { abort: boolean } {
+  if (!s.armed) return { since: null, lifted: false, abort: false };
+  if (w.lifted || s.altM >= NO_LIFTOFF.altM) return { since: null, lifted: true, abort: false };
+  if (s.throttlePct < NO_LIFTOFF.throttlePct) return { since: null, lifted: false, abort: false };
+  const since = w.since ?? s.nowMs;
+  return { since, lifted: false, abort: s.nowMs - since >= NO_LIFTOFF.ms };
+}
+
 export interface HoverTestPlan {
   heightM: number;
   holdS: number;
