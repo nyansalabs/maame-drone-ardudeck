@@ -151,6 +151,7 @@
     <a class="brand" href="#top"><img src="assets/maame-emblem.svg" alt="" width="30" height="26">MaameDrone-ArduDeck</a>
     <ul class="nav-links">
       <li><a href="#how">How it flies</a></li>
+      <li><a href="#board">Board</a></li>
       <li><a href="#features">Features</a></li>
       <li><a href="#safety">Safety</a></li>
       <li><a href="#screens">Screens</a></li>
@@ -245,6 +246,29 @@
       <div><h3>One talker, many listeners</h3><p class="muted">Telemetry arrives on every link; commands and mission uploads go out on the active link only, with automatic failover.</p></div>
       <div><h3>Signed links</h3><p class="muted">MAVLink signing on the flight controller: unsigned commands are ignored.</p></div>
       <div><h3>A backup that doesn't need the Pi</h3><p class="muted">The SiK radio is wired straight to the flight controller, so a Pi crash never cuts the last link.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="board">
+  <div class="wrap">
+    <h2>The board it flies on</h2>
+    <p class="lead">MaameDrone V1.0 is our own carrier board: one 95 × 116.5 mm, two-layer PCB that holds the Kakute H7 and the Pi Zero W, powers both from the 6S battery and breaks out every port the aircraft uses. The design files are open.</p>
+
+    <div class="row">
+      <div class="row-text">
+        <h3>Flight controller and companion, one board</h3>
+        <p class="muted">The Kakute H7 sits on M2.5 grommets and connects through a short harness to headers that copy its pads 1:1. The Pi Zero W plugs face down onto a 2×20 socket and talks to the flight controller over the serial link this app listens on.</p>
+        <p><a href="https://nyansalabs.com/board/">Specs, connector map and design files</a></p>
+      </div>
+      <img src="assets/carrier-board.jpg" width="1200" height="895" loading="lazy"
+           alt="MaameDrone V1.0 carrier board, 3D render with the Kakute H7 outline and the Pi Zero W socket">
+    </div>
+
+    <div class="points">
+      <div><h3>Power from the battery</h3><p class="muted">A TPS54360B buck makes 5 V at 3.5 A, behind a 2 A fuse and a TVS diode, plus a fused battery output.</p></div>
+      <div><h3>Every port broken out</h3><p class="muted">GPS M10Q, SiK radio, iBUS receiver, TF-Luna lidar, a servo, spare I2C and SPI, all named on the silkscreen.</p></div>
+      <div><h3>Status at a glance</h3><p class="muted">LEDs for both 5 V rails, the Pi, data and three battery levels; the low one flashes at the battery failsafe.</p></div>
     </div>
   </div>
 </section>
