@@ -2,7 +2,7 @@
 
 Nyansa Labs' goal for the Maame series is **Full Self-Flying**: an aircraft you give a goal, not a joystick. This page is the ground-station side of that plan: what MaameDrone-ArduDeck has to do at each level, and which open-source projects we intend to build on.
 
-The aircraft side (companion computer, flight controller parameters, SITL tests) lives in the Maame aircraft repo, [`docs/fsf-roadmap.md`](https://github.com/asare-21/maame-air/blob/main/docs/fsf-roadmap.md). Candidate algorithms come from the community list [alexkoven/Autonomous-UAVs](https://github.com/alexkoven/Autonomous-UAVs).
+The aircraft side (companion computer, flight controller parameters, SITL tests) lives in the private Maame aircraft repo (`maame-air`, `docs/fsf-roadmap.md`). Candidate algorithms come from the community list [alexkoven/Autonomous-UAVs](https://github.com/alexkoven/Autonomous-UAVs).
 
 ## Levels
 
