@@ -1616,6 +1616,8 @@ export interface SettingsStoreSchema {
    * on ArduPilot 4.6+).
    */
   gcsSysid?: number;
+  /** Maame: an RC transmitter is fitted (safety baseline expects the RC failsafe). */
+  maameRcFitted?: boolean;
 }
 
 // =============================================================================

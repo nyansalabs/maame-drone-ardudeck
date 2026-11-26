@@ -345,6 +345,10 @@ interface SettingsStore {
   gcsSysid: number;
   setGcsSysid: (sysid: number) => void;
 
+  // Maame: an RC transmitter is fitted, so the safety baseline expects the RC failsafe on.
+  maameRcFitted: boolean;
+  setMaameRcFitted: (fitted: boolean) => void;
+
   // AI Analysis
   aiProvider: 'claude' | 'openai' | 'gemini' | null;
   setAiProvider: (provider: 'claude' | 'openai' | 'gemini' | null) => void;
@@ -839,6 +843,9 @@ export const useSettingsStore = create<SettingsStore>()(
     set({ gcsSysid: clamped });
   },
 
+  maameRcFitted: false,
+  setMaameRcFitted: (fitted: boolean) => set({ maameRcFitted: fitted }),
+
   aiProvider: null,
   setAiProvider: (provider) => {
     set({ aiProvider: provider });
@@ -1018,6 +1025,7 @@ export const useSettingsStore = create<SettingsStore>()(
           gcsSysid: typeof settingsRecord.gcsSysid === 'number'
             ? Math.min(255, Math.max(1, Math.round(settingsRecord.gcsSysid)))
             : 255,
+          maameRcFitted: !!settingsRecord.maameRcFitted,
           aiProvider: (settingsRecord.aiProvider as 'claude' | 'openai' | 'gemini' | null) ?? null,
           aiWarningDismissed: !!settingsRecord.aiWarningDismissed,
           surveyPresets: (settings.surveyPresets ?? []) as PersistedSurveyPreset[],
@@ -1072,6 +1080,7 @@ export const useSettingsStore = create<SettingsStore>()(
         voiceAlertsMuted: state.voiceAlertsMuted,
         showDebugLogs: state.showDebugLogs,
         gcsSysid: state.gcsSysid,
+        maameRcFitted: state.maameRcFitted,
         aiProvider: state.aiProvider,
         aiWarningDismissed: state.aiWarningDismissed,
         surveyPresets: state.surveyPresets,
@@ -1414,6 +1423,7 @@ useSettingsStore.subscribe(
     voiceAlertsMuted: state.voiceAlertsMuted,
     showDebugLogs: state.showDebugLogs,
     gcsSysid: state.gcsSysid,
+    maameRcFitted: state.maameRcFitted,
     aiProvider: state.aiProvider,
     aiWarningDismissed: state.aiWarningDismissed,
     surveyPresets: state.surveyPresets,

@@ -212,6 +212,11 @@ const userModifiedParams = new Set<string>();
 // ArduPilot write-now/flash-later flow would skip the review step).
 const stagedParams = new Set<string>();
 
+/** The value the FC holds: a staged (unwritten) edit reads its pre-edit value; an immediate write is already on the FC. */
+export function fcHeldValue(p: ParameterWithMeta): number {
+  return stagedParams.has(p.id) ? (p.originalValue ?? p.value) : p.value;
+}
+
 /** Backoff for automatic parameter fetches: doubles per failure to 30 s, and
  * resets the moment a request is accepted. A manual retry passes force. */
 let paramFetchFailures = 0;

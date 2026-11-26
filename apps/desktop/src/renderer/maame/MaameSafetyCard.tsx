@@ -1,9 +1,9 @@
 /**
  * Maame safety baseline check, shown at the top of the Pre-flight panel:
- * compares the FC's parameters with the no-RC baseline and applies the fixes.
+ * compares the FC's parameters with the baseline (no RC, or transmitter fitted) and applies the fixes.
  */
 import { useMemo, useState } from 'react';
-import { useParameterStore } from '../stores/parameter-store';
+import { fcHeldValue, useParameterStore } from '../stores/parameter-store';
 import { useSettingsStore } from '../stores/settings-store';
 import { useTelemetryStore } from '../stores/telemetry-store';
 import { checkBaseline, maameBaseline } from './safety-baseline';
@@ -12,14 +12,15 @@ import { checkBaseline, maameBaseline } from './safety-baseline';
 export function useMaameBaselineResults() {
   const parameters = useParameterStore((s) => s.parameters);
   const gcsSysid = useSettingsStore((s) => s.gcsSysid);
+  const rcFitted = useSettingsStore((s) => s.maameRcFitted);
   return useMemo(
     () =>
-      checkBaseline(maameBaseline(gcsSysid), (id) => {
+      checkBaseline(maameBaseline(gcsSysid, rcFitted), (id) => {
         const p = parameters.get(id);
         if (!p) return null;
-        return p.isModified ? (p.originalValue ?? p.value) : p.value; // what the FC holds
+        return fcHeldValue(p);
       }),
-    [parameters, gcsSysid],
+    [parameters, gcsSysid, rcFitted],
   );
 }
 
@@ -28,6 +29,8 @@ export function MaameSafetyCard() {
   const fetchParameters = useParameterStore((s) => s.fetchParameters);
   const setParameterImmediate = useParameterStore((s) => s.setParameterImmediate);
   const armed = useTelemetryStore((s) => s.flight.armed);
+  const rcFitted = useSettingsStore((s) => s.maameRcFitted);
+  const setRcFitted = useSettingsStore((s) => s.setMaameRcFitted);
   const [applying, setApplying] = useState(false);
   const [writeErrors, setWriteErrors] = useState<string[]>([]);
   const [needsReboot, setNeedsReboot] = useState(false);
@@ -71,11 +74,15 @@ export function MaameSafetyCard() {
   return (
     <div className={`rounded-lg border p-3 text-sm ${failing.length ? 'border-red-500/60' : 'border-green-500/50'}`}>
       <div className="flex items-center justify-between">
-        <span className="font-medium">Maame safety baseline (no RC)</span>
+        <span className="font-medium">Maame safety baseline ({rcFitted ? 'transmitter fitted' : 'no RC'})</span>
         <span className={failing.length ? 'text-red-400' : 'text-green-400'}>
           {failing.length ? `${failing.length} of ${results.length} not safe` : `all ${results.length} OK`}
         </span>
       </div>
+      <label className="mt-1 flex items-center gap-2 text-xs text-gray-400">
+        <input type="checkbox" checked={rcFitted} disabled={applying} onChange={(e) => setRcFitted(e.target.checked)} />
+        RC transmitter fitted (set its failsafe to drop throttle below FS_THR_VALUE)
+      </label>
       {failing.length > 0 && (
         <ul className="mt-2 space-y-1">
           {failing.map((r) => (

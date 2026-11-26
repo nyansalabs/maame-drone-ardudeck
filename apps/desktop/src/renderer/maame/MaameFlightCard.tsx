@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMessagesStore } from '../stores/messages-store';
 import { useMissionStore } from '../stores/mission-store';
-import { useParameterStore } from '../stores/parameter-store';
+import { fcHeldValue, useParameterStore } from '../stores/parameter-store';
 import { fenceWarningForPoint } from '../utils/fence-check';
 import { checkMission } from './mission-check';
 import { NO_LIFTOFF, loadHoverCurrent, watchLiftOff, type LiftOffWatch } from './hover-test';
@@ -68,7 +68,7 @@ export function useFcParam(): (name: string) => number | null {
     () => (name: string) => {
       const p = parameters.get(name);
       if (!p) return null;
-      return p.isModified ? (p.originalValue ?? p.value) : p.value;
+      return fcHeldValue(p);
     },
     [parameters],
   );

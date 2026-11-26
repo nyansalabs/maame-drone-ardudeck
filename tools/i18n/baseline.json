@@ -10,9 +10,9 @@
   "renderer/maame/MaameHoverTestCard.tsx": 16,
   "renderer/maame/MaameLinkBadge.tsx": 1,
   "renderer/maame/MaameMotorVibeCard.tsx": 15,
-  "renderer/maame/MaameSafetyCard.tsx": 13,
+  "renderer/maame/MaameSafetyCard.tsx": 16,
   "renderer/maame/hover-test.ts": 1,
   "renderer/maame/maame-profile.ts": 1,
   "renderer/maame/ready-checks.ts": 11,
-  "renderer/maame/safety-baseline.ts": 8
+  "renderer/maame/safety-baseline.ts": 9
 }

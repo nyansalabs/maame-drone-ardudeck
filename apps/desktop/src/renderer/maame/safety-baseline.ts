@@ -1,6 +1,6 @@
 /**
  * Maame safety baseline: the ArduCopter 4.7 settings a drone flying autonomous
- * missions with NO RC transmitter must have. With no pilot to take over, these
+ * missions must have, with or without an RC transmitter fitted. With no pilot to take over, these
  * failsafes are the only safety net. Names/values checked against Copter-4.7.2
  * (RTL_ALT is RTL_ALT_M, SYSID_MYGCS is MAV_GCS_SYSID in 4.7).
  */
@@ -20,13 +20,22 @@ export interface BaselineItem {
   reboot?: boolean;
 }
 
-export function maameBaseline(gcsSysid: number): BaselineItem[] {
+export function maameBaseline(gcsSysid: number, rcFitted = false): BaselineItem[] {
+  const rc: BaselineItem[] = rcFitted
+    ? [
+        { param: 'ARMING_SKIPCHK', rule: { kind: 'eq', value: 0 }, why: 'Transmitter fitted: every pre-arm check on, including RC' },
+        { param: 'FS_THR_ENABLE', rule: { kind: 'oneOf', values: [1, 3, 4, 5], fix: 1 }, why: 'Lost transmitter: return to launch (or land)' },
+        { param: 'FS_OPTIONS', rule: { kind: 'bitsSet', bits: 11 }, why: 'On lost transmitter or ground link keep flying an AUTO mission and keep landing' },
+      ]
+    : [
+        { param: 'ARMING_SKIPCHK', rule: { kind: 'eq', value: 64 }, why: 'Skip only the RC check (no transmitter); every other pre-arm check stays on' },
+        { param: 'FS_THR_ENABLE', rule: { kind: 'eq', value: 0 }, why: 'No RC: the throttle failsafe would trigger immediately' },
+        { param: 'FS_OPTIONS', rule: { kind: 'eq', value: 10 }, why: 'On lost link keep flying an AUTO mission and keep landing; not in pilot modes (there is no pilot)' },
+      ];
   return [
-    { param: 'ARMING_SKIPCHK', rule: { kind: 'eq', value: 64 }, why: 'Skip only the RC check (no transmitter); every other pre-arm check stays on' },
-    { param: 'FS_THR_ENABLE', rule: { kind: 'eq', value: 0 }, why: 'No RC: the throttle failsafe would trigger immediately' },
+    ...rc,
     { param: 'FS_GCS_ENABLE', rule: { kind: 'oneOf', values: [1, 3], fix: 1 }, why: 'Lost ground link: return to launch' },
     { param: 'FS_GCS_TIMEOUT', rule: { kind: 'max', value: 10, fix: 5 }, why: 'React to a lost ground link within seconds' },
-    { param: 'FS_OPTIONS', rule: { kind: 'eq', value: 10 }, why: 'On lost link keep flying an AUTO mission and keep landing; not in pilot modes (there is no pilot)' },
     { param: 'FS_EKF_ACTION', rule: { kind: 'oneOf', values: [1, 3], fix: 1 }, why: 'Position estimate failure: land (never AltHold without a pilot)' },
     { param: 'AUTO_OPTIONS', rule: { kind: 'bitsSet', bits: 3 }, why: 'Arm and take off in AUTO without raising a throttle stick' },
     { param: 'FENCE_ENABLE', rule: { kind: 'eq', value: 1 }, why: 'Geofence on' },

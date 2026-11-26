@@ -14,8 +14,8 @@ describe('maame safety baseline', () => {
     const failing = checkBaseline(maameBaseline(255), (p) => FC[p] ?? null).filter((r) => !r.ok);
     expect(failing.map((r) => [r.item.param, r.fix])).toEqual([
       ['ARMING_SKIPCHK', 64],
-      ['FS_GCS_ENABLE', 1],
       ['FS_OPTIONS', 10],
+      ['FS_GCS_ENABLE', 1],
       ['AUTO_OPTIONS', 3],
       ['FENCE_ENABLE', 1],
     ]);
@@ -33,5 +33,19 @@ describe('maame safety baseline', () => {
     expect(checkItem(auto, null)).toMatchObject({ ok: false, fix: null });
     const gcs = maameBaseline(254).find((i) => i.param === 'MAV_GCS_SYSID')!;
     expect(checkItem(gcs, 255)).toMatchObject({ ok: false, fix: 254 });
+  });
+
+  it('with a transmitter fitted, wants the RC check and RC failsafe on', () => {
+    const failing = checkBaseline(maameBaseline(255, true), (p) => FC[p] ?? null).filter((r) => !r.ok);
+    expect(failing.map((r) => [r.item.param, r.fix])).toEqual([
+      ['FS_THR_ENABLE', 1],
+      ['FS_OPTIONS', 27], // bits 0,1,3 added, user's bit 4 kept
+      ['FS_GCS_ENABLE', 1],
+      ['AUTO_OPTIONS', 3],
+      ['FENCE_ENABLE', 1],
+    ]);
+    const noRcFixed: Record<string, number> = { ...FC, ARMING_SKIPCHK: 64, FS_OPTIONS: 10 };
+    const skip = checkBaseline(maameBaseline(255, true), (p) => noRcFixed[p] ?? null).find((r) => r.item.param === 'ARMING_SKIPCHK')!;
+    expect(skip).toMatchObject({ ok: false, fix: 0 }); // no-RC values are flagged, not kept
   });
 });

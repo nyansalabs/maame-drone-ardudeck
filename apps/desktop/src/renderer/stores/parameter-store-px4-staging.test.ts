@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { useParameterStore } from './parameter-store';
+import { fcHeldValue, useParameterStore } from './parameter-store';
 import { useConnectionStore } from './connection-store';
 
 const REAL32 = 9;
@@ -79,6 +79,15 @@ describe('parameter-store PX4 staged writes', () => {
     setFirmware('px4');
     await useParameterStore.getState().setParameterImmediate('NAV_RCL_ACT', 3);
     expect(setParameterIpc).toHaveBeenCalledWith('NAV_RCL_ACT', 3, REAL32);
+  });
+
+  it('fcHeldValue: an immediate write is on the FC, a staged edit is not', async () => {
+    setFirmware('ardupilot');
+    await useParameterStore.getState().setParameterImmediate('NAV_RCL_ACT', 3);
+    expect(fcHeldValue(useParameterStore.getState().parameters.get('NAV_RCL_ACT')!)).toBe(3);
+    seedParam('NAV_RCL_ACT', 2);
+    await useParameterStore.getState().setParameter('NAV_RCL_ACT', 5);
+    expect(fcHeldValue(useParameterStore.getState().parameters.get('NAV_RCL_ACT')!)).toBe(2);
   });
 
   it('ardupilot: setParameter stages locally and sends NOTHING to the vehicle', async () => {
